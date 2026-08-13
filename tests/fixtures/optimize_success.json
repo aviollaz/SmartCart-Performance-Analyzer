@@ -1,0 +1,58 @@
+{
+  "event_id": "3f8c9d2e-7b1a-4c55-9e10-2a6b4d8f1c33",
+  "event_type": "cart_optimized",
+  "schema_version": 1,
+  "occurred_at": "2026-08-12T18:42:10.512000+00:00",
+  "source": { "app": "smartcart", "env": "dev", "version": "1.0.0" },
+  "user": {
+    "anon_user_id": "9f2b77c4-51d0-4a3e-b8aa-0f6d21e4c9b7",
+    "zone": "CABA",
+    "memberships": ["Comunidad Coto"],
+    "cards": ["Visa Galicia"]
+  },
+  "cart": {
+    "items": [
+      { "unified_id": "u_1a2b3c", "quantity": 2 },
+      { "unified_id": "u_4d5e6f", "quantity": 1 },
+      { "unified_id": "u_7g8h9i", "quantity": 3 }
+    ]
+  },
+  "result": {
+    "status": "success",
+    "total_spent_net": 84210.55,
+    "price_savings_total": 6120.30,
+    "excluded_stores": [],
+    "split": {
+      "dia_online": {
+        "products": [
+          { "unified_id": "u_1a2b3c", "quantity": 2, "total_cost": 5400.00 },
+          { "unified_id": "u_4d5e6f", "quantity": 1, "total_cost": 35600.00 }
+        ],
+        "subtotal_products": 41000.00,
+        "delivery_cost": 2000.00,
+        "bank_discount": {
+          "card": "Visa Galicia",
+          "amount": 4100.00,
+          "description": "20% de descuento, tope $8000"
+        },
+        "store_total": 38900.00
+      },
+      "carrefour_online": {
+        "products": [
+          { "unified_id": "u_7g8h9i", "quantity": 3, "total_cost": 41810.55 }
+        ],
+        "subtotal_products": 41810.55,
+        "delivery_cost": 3500.00,
+        "bank_discount": null,
+        "store_total": 45310.55
+      }
+    }
+  },
+  "engine": {
+    "suggestions_count": 3,
+    "strategic_swaps_count": 1,
+    "coto_covered": true,
+    "coto_delivery_source": "live",
+    "duration_ms": 812
+  }
+}

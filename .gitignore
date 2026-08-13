@@ -1,0 +1,10 @@
+# Entorno virtual
+.venv/
+
+# Credenciales reales. El .env.example versionado es la plantilla.
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/

@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+# El extra `pool` trae psycopg_pool: la API mantiene un pool abierto durante todo
+# su ciclo de vida en vez de abrir una conexión por request (ver src/db.py).
+psycopg[binary,pool]
+pydantic
+pydantic-settings
+# httpx lo usan tanto los tests (TestClient) como scripts/seed_fake_events.py.
+httpx
+pytest
