@@ -72,7 +72,7 @@ Corren contra el Postgres dockerizado (no contra mocks: lo que se verifica es el
 
 ## El evento
 
-`POST /events/cart-optimized`, con header `X-API-Key`.
+`POST /track-optimization` (alias: `/events/cart-optimized`), con header `X-API-Key`.
 
 | Respuesta | Significado |
 |---|---|
@@ -187,10 +187,21 @@ Ticket promedio       = CALCULATE(AVERAGE(vw_optimizations[total_spent_net]), vw
 
 **% multi-tienda** es el KPI que valida la propuesta de valor del producto: si casi nadie termina comprando en dos supermercados, el optimizador no está moviendo la aguja.
 
-## Pendiente: instrumentar SmartCart
+## Producción
 
-Este servicio ya está listo para recibir, pero **SmartCart todavía no le manda nada**. Falta, en el repo de la app principal:
+Corre en Cloud Run (`smartcart-analytics`, `us-east1`) con el `Dockerfile` del
+repo, contra una base `smartcart_analytics` en el mismo proyecto de Neon que
+SmartCart. Los pasos completos (base, secretos, deploy, verificación) están en
+`docs/operacion.md` de SmartCart, sección "Analítica".
 
-1. `src/api.py` — al final de `optimize_shopping_cart`, justo antes del `return result`: un `BackgroundTasks.add_task` que arme el envelope y haga `httpx.post` con timeout corto, envuelto en `try/except` que sólo loguee. **Invariante: la analítica no puede tumbar ni demorar `/optimize`.** El `occurred_at` tiene que salir de `datetime.now(timezone.utc)`.
-2. `frontend/src/context/ProfileContext.jsx` — agregar `anon_user_id` (UUID) a `DEFAULT_PROFILE`.
-3. `frontend/src/api/optimize.js` — hacerlo viajar en el request.
+Variables que importan en producción:
+
+| Variable | Valor | Por qué |
+|---|---|---|
+| `DATABASE_URL` | secreto `analytics-db-url` | Le gana a las `POSTGRES_*`. Con `?sslmode=require` para Neon |
+| `ANALYTICS_API_KEY` | secreto `analytics-api-key` | El mismo que usa SmartCart. Con la de ejemplo y `ENVIRONMENT` distinto de `dev`, el servicio no arranca |
+| `ENVIRONMENT` | `prod` | |
+| `POOL_MIN_SIZE` | `0` | Una conexión sostenida no deja suspender a Neon y gasta las horas del plan gratuito |
+
+SmartCart manda a `POST /track-optimization`. `POST /events/cart-optimized`, la
+ruta original, sigue funcionando como alias.

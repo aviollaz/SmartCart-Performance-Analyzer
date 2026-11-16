@@ -20,8 +20,19 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name
 logger = logging.getLogger(__name__)
 
 
+DEFAULT_API_KEY = "dev-local-key-change-me"
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    settings = get_settings()
+    # La key por defecto está en el repo público: fuera de desarrollo, aceptarla
+    # equivale a no tener autenticación y deja a cualquiera ensuciar el tablero.
+    if settings.environment not in ("dev", "pytest") and settings.analytics_api_key == DEFAULT_API_KEY:
+        raise RuntimeError(
+            f"ENVIRONMENT={settings.environment} con la ANALYTICS_API_KEY por defecto. "
+            "Generá una con: python -c \"import secrets; print(secrets.token_urlsafe(32))\""
+        )
     db.open_pool()
     yield
     db.close_pool()
@@ -66,10 +77,20 @@ def health() -> dict:
     return {"status": "ok" if db_ok else "degraded", "db": "ok" if db_ok else "unreachable"}
 
 
+# Dos rutas, un solo handler. `/track-optimization` es la que usa SmartCart
+# (src/analytics.py, EVENT_PATH); `/events/cart-optimized` es la ruta original y
+# queda como alias para no romper a un emisor viejo. El desfase entre las dos
+# fue exactamente lo que dejaba a cada evento en 404.
+@app.post(
+    "/track-optimization",
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_api_key)],
+)
 @app.post(
     "/events/cart-optimized",
     status_code=status.HTTP_201_CREATED,
     dependencies=[Depends(require_api_key)],
+    include_in_schema=False,
 )
 async def ingest_cart_optimized(
     event: IngestEvent,

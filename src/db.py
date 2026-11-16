@@ -26,14 +26,23 @@ def open_pool() -> ConnectionPool:
         settings = get_settings()
         # `open=True` con `check` hace que un Postgres caído se note en el
         # arranque y no en el primer evento perdido.
+        # Con min_size=0 el pool arranca sin conexiones, así que `open=True` ya
+        # no valida la base en el arranque: un Neon suspendido no frena el
+        # deploy, y GET /health sigue siendo el lugar donde mirar.
         _pool = ConnectionPool(
             conninfo=settings.dsn,
-            min_size=1,
-            max_size=10,
+            min_size=settings.pool_min_size,
+            max_size=settings.pool_max_size,
+            max_idle=settings.pool_max_idle,
             open=True,
             check=ConnectionPool.check_connection,
         )
-        logger.info("Pool de conexiones abierto contra %s:%s", settings.postgres_host, settings.postgres_port)
+        # Nunca loguear el DSN: con DATABASE_URL trae la contraseña.
+        target = "DATABASE_URL" if settings.database_url else f"{settings.postgres_host}:{settings.postgres_port}"
+        logger.info(
+            "Pool de conexiones abierto contra %s (min=%s, max=%s)",
+            target, settings.pool_min_size, settings.pool_max_size,
+        )
     return _pool
 
 
