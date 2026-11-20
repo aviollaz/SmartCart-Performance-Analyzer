@@ -6,17 +6,45 @@ Corre **independiente de la app principal**: su propio contenedor, su propio pue
 
 ## Arquitectura
 
+```mermaid
+flowchart LR
+    SC[SmartCart<br/>POST /optimize] -- "evento cart_optimized<br/>fire-and-forget, timeout 2 s" --> API[API de ingesta<br/>FastAPI :8001]
+    API --> DW[(Data warehouse<br/>Postgres :5433)]
+    DW --> V[Vistas planas<br/>vw_daily_kpis · vw_store_share_daily<br/>vw_store_participation · vw_optimizations]
+    V --> BI[Power BI]
 ```
-SmartCart /optimize ──POST evento──▶ API de ingesta (FastAPI :8001)
-                                            │
-                                            ▼
-                              Postgres data warehouse (:5433)
-                              fact_optimization
-                              fact_optimization_store
-                              dim_store
-                                            │
-                                            ▼
-                                  vistas ──▶ Power BI
+
+Modelo en estrella: un hecho por carrito optimizado y otro por cada supermercado que participó de ese carrito.
+
+```mermaid
+erDiagram
+    fact_optimization ||--o{ fact_optimization_store : "se reparte en"
+    dim_store ||--o{ fact_optimization_store : "describe"
+    fact_optimization {
+        uuid event_id UK "idempotencia"
+        timestamptz occurred_at
+        text zone
+        text status "success | infeasible"
+        int items_count
+        numeric total_spent_net
+        numeric total_delivery_cost
+        numeric total_bank_discount
+        numeric price_savings_total
+        jsonb raw_payload "evento completo"
+    }
+    fact_optimization_store {
+        text store_id FK
+        int items_count
+        numeric subtotal_products
+        numeric delivery_cost
+        numeric bank_discount_amount
+        numeric store_total
+    }
+    dim_store {
+        text store_id PK
+        text display_name
+        text brand_color
+    }
 ```
 
 > **Puertos.** El data warehouse usa **5433** y la API **8001**. La app principal ya ocupa 5432 (su Postgres con pgvector) y 8000 (su API). Los dos servicios conviven levantados al mismo tiempo.
